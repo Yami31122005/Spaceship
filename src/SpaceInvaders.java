@@ -15,6 +15,7 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
         Image img;
         boolean alive = true;
         boolean used = false;
+        int hp = 1;
         Block (int x, int y, int width, int height, Image img) {
             this.x = x;
             this.y = y;
@@ -56,6 +57,9 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
 
         Block ship;
 
+        //Bosses fight one after another; each next boss has double the HP
+        ArrayList<Block> bossArray;
+        int bossIndex = 0;
 
 
         ArrayList<Block> alienArray;
@@ -106,6 +110,10 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
                 getClass().getResource("/Alien_3.png")
         ).getImage();
 
+        Alien_4_Image = new ImageIcon(
+                getClass().getResource("/Alien_4.png")
+        ).getImage();
+
         Alien_5_Image = new ImageIcon(
                 getClass().getResource("/Alien_5.png")
         ).getImage();
@@ -131,9 +139,6 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
          Bullet_3 = new ImageIcon(
                 getClass().getResource("/Shoot_3.png")
         ).getImage();
-
-
-
 
 
         alienBossImgArray = new ArrayList<>();
@@ -162,6 +167,8 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
 
         createBullets();
 
+        createBosses();
+
      gameloop = new Timer(1000/60, this);
      gameloop.start();
 
@@ -181,6 +188,11 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
                 g.drawImage(alien.img, alien.x, alien.y, alien.width, alien.height, null);
             }
         }
+        //boss
+        Block boss = currentBoss();
+        if (boss != null && boss.alive) {
+            g.drawImage(boss.img, boss.x, boss.y, boss.width, boss.height, null);
+        }
     for (Block bullet : bulletArray) {
     if (bullet.used) {
         g.drawImage(bullet.img, bullet.x, bullet.y, bullet.width, bullet.height, null);
@@ -188,6 +200,22 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
     }
     }
     public void move() {
+        //boss: spawn when regular aliens are gone, move, go to next boss when one is beaten
+        Block boss = currentBoss();
+        if (boss != null && !boss.alive && boss.hp <= 0) {
+            bossIndex++;
+            boss = currentBoss();
+        }
+        if (boss != null && !boss.alive && boss.hp > 0 && allAliensDead()) {
+            boss.alive = true;
+        }
+        if (boss != null && boss.alive) {
+            boss.x += AlienvelocityX;
+            if (boss.x + boss.width >= boardWidth || boss.x <= 0) {
+                AlienvelocityX *= -1;
+            }
+        }
+
         for (int i = 0; i < alienArray.size(); i++) {
             Block alien = alienArray.get(i);
             if (alien.alive) {
@@ -214,7 +242,6 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
         bullet.used = false;
         continue;
     }
-int score = 0;
     // hit an alien?
     for (Block alien : alienArray) {
         if (alien.alive && bullet.x < alien.x + alien.width
@@ -222,12 +249,22 @@ int score = 0;
                         && bullet.y < alien.y + alien.height
                         && bullet.y + bullet.height > alien.y) {
             alien.alive = false;
- bullet.used = false;
+            bullet.used = false;
             Aliendefeated--;
             break;
         }
-         //next level
-      
+    }
+
+    // hit the boss?
+    Block target = currentBoss();
+    if (bullet.used && target != null && target.alive
+                    && bullet.x < target.x + target.width
+                    && bullet.x + bullet.width > target.x
+                    && bullet.y < target.y + target.height
+                    && bullet.y + bullet.height > target.y) {
+        bullet.used = false;
+        target.hp--;
+        if (target.hp <= 0) target.alive = false;
     }
 
 }
@@ -254,6 +291,25 @@ int score = 0;
             bullet.used = false;
             bulletArray.add(bullet);
         }
+    }
+  public void createBosses() {
+        bossArray = new ArrayList<>();
+        for (int i = 0; i < alienBossImgArray.size(); i++) {
+            Block b = new Block(boardWidth / 2 - tileSize * 2, tileSize,
+                                tileSize * 4, tileSize * 4, alienBossImgArray.get(i));
+            b.hp = 10 << i;   // boss 1: 10 HP, boss 2: 20, boss 3: 40
+            b.alive = false;  // hidden until its turn
+            bossArray.add(b);
+        }
+    }
+    Block currentBoss() {
+        return bossIndex < bossArray.size() ? bossArray.get(bossIndex) : null;
+    }
+    boolean allAliensDead() {
+        for (Block a : alienArray) {
+            if (a.alive) return false;
+        }
+        return true;
     }
     public void shootBullet(Image img) {
     for (Block bullet : bulletArray) {
@@ -313,10 +369,3 @@ int score = 0;
     Timer gameloop;
 
 }
-
-
-
-      
-
-
-
