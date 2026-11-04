@@ -61,6 +61,22 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
         ArrayList<Block> bossArray;
         int bossIndex = 0;
 
+        //Boss lasers: 3 sprites, 5 shots per second
+        Image Laser_1_Image;
+        Image Laser_2_Image;
+        Image Laser_3_Image;
+        ArrayList<Image> laserImgArray;
+        ArrayList<Block> bossLaserArray;
+        int bossShotCounter = 0;
+        int laserShotCount = 0;
+        int laserWidth = tileSize / 2;
+        int laserHeight = tileSize;
+        int laserVelocityY = 5;
+
+        //Player
+        int shipLives = 3;
+        boolean gameOver = false;
+
 
         ArrayList<Block> alienArray;
         int alienwidth = tileSize;
@@ -167,6 +183,15 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
 
         createBullets();
 
+        Laser_1_Image = new ImageIcon(getClass().getResource("/Laser_1.png")).getImage();
+        Laser_2_Image = new ImageIcon(getClass().getResource("/Laser_2.png")).getImage();
+        Laser_3_Image = new ImageIcon(getClass().getResource("/Laser_3.png")).getImage();
+        laserImgArray = new ArrayList<>();
+        laserImgArray.add(Laser_1_Image);
+        laserImgArray.add(Laser_2_Image);
+        laserImgArray.add(Laser_3_Image);
+        bossLaserArray = new ArrayList<>();
+
         createBosses();
 
      gameloop = new Timer(1000/60, this);
@@ -198,8 +223,21 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
         g.drawImage(bullet.img, bullet.x, bullet.y, bullet.width, bullet.height, null);
     }
     }
+        //boss lasers
+        for (Block laser : bossLaserArray) {
+            g.drawImage(laser.img, laser.x, laser.y, laser.width, laser.height, null);
+        }
+        //HUD
+        g.setColor(Color.black);
+        g.setFont(new Font("Arial", Font.BOLD, 16));
+        g.drawString("Vies: " + shipLives, 10, 20);
+        if (gameOver) {
+            g.setFont(new Font("Arial", Font.BOLD, 32));
+            g.drawString("GAME OVER", boardWidth / 2 - 100, boardHeight / 2);
+        }
     }
     public void move() {
+        if (gameOver) return;
         //boss: spawn when regular aliens are gone, move, go to next boss when one is beaten
         Block boss = currentBoss();
         if (boss != null && !boss.alive && boss.hp <= 0) {
@@ -232,6 +270,37 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
           
 
         }
+        //boss fires 5 lasers per second (60 frames / 12 = 5), cycling through the 3 laser sprites
+        if (boss != null && boss.alive) {
+            bossShotCounter++;
+            if (bossShotCounter >= 12) {
+                bossShotCounter = 0;
+                Image img = laserImgArray.get(laserShotCount % laserImgArray.size());
+                laserShotCount++;
+                bossLaserArray.add(new Block(boss.x + boss.width / 2 - laserWidth / 2,
+                                             boss.y + boss.height, laserWidth, laserHeight, img));
+            }
+        }
+        //lasers fall; touching the ship costs one life
+        for (int i = bossLaserArray.size() - 1; i >= 0; i--) {
+            Block laser = bossLaserArray.get(i);
+            laser.y += laserVelocityY;
+            if (laser.y > boardHeight) {
+                bossLaserArray.remove(i);
+                continue;
+            }
+            if (laser.x < ship.x + ship.width && laser.x + laser.width > ship.x
+                    && laser.y < ship.y + ship.height && laser.y + laser.height > ship.y) {
+                bossLaserArray.remove(i);
+                shipLives--;
+                if (shipLives <= 0) {
+                    shipLives = 0;
+                    gameOver = true;
+                    return;
+                }
+            }
+        }
+
         for (Block bullet : bulletArray) {
     if (!bullet.used) continue;
 
