@@ -192,6 +192,11 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
         laserImgArray.add(Laser_3_Image);
         bossLaserArray = new ArrayList<>();
 
+        //Heart sprite (src/Heart.png); the game still starts without it
+        if (getClass().getResource("/Heart.png") != null) {
+            heartImg = new ImageIcon(getClass().getResource("/Heart.png")).getImage();
+        }
+
         createBosses();
 
      gameloop = new Timer(1000/60, this);
