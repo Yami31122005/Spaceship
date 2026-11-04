@@ -73,7 +73,9 @@ public class  SpaceInvaders extends JPanel implements ActionListener, KeyListene
         int laserHeight = tileSize;
         int laserVelocityY = 5;
 
-        //Player
+        //Player: 3 hearts, one disappears per hit
+        Image heartImg;
+        int heartSize = tileSize;
         int shipLives = 3;
         boolean gameOver = false;
 
